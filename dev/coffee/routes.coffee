@@ -8,10 +8,10 @@ angular
       $urlRouterProvider.otherwise '/'
 
       $stateProvider
-        .state('index',
+        .state('home',
           url: '/'
           templateUrl: 'templates/home/index.html'
-          controller: 'HomeCtrl'
+          # controller: 'HomeCtrl'
         )
 
       return
