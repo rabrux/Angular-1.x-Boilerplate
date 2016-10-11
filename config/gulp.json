@@ -1,0 +1,45 @@
+{
+  "coffee": {
+    "source": [
+      "dev/coffee/*.coffee",
+      "dev/coffee/**/*.coffee"
+    ],
+    "file": "app.min.js",
+    "dest": "dist/js"
+  },
+  "less": {
+    "source": [
+      "dev/less/*.less",
+      "dev/less/**/*.less"
+    ],
+    "file": "style.min.css",
+    "dest": "dist/css"
+  },
+  "templates": {
+    "source": [
+      "dev/templates/*.html",
+      "dev/templates/**/*.html"
+    ],
+    "dest": "dist/templates"
+  },
+  "index": {
+    "source": "dev/index.html",
+    "dest": "dist"
+  },
+  "images": {
+    "source": [
+      "src/images/*.*",
+      "src/images/**/*.*"
+    ],
+    "dest": "dist/images"
+  },
+  "dist": [
+    "dist/js/*.js",
+    "dist/css/*.css",
+    "dist/templates/*.html",
+    "dist/templates/**/*.html",
+    "dist/images/*.*",
+    "dist/images/**/*.*",
+    "dist/*.html"
+  ]
+}

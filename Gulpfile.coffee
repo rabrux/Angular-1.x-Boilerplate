@@ -3,8 +3,9 @@ coffee     = require 'gulp-coffee'
 concat     = require 'gulp-concat'
 connect    = require 'gulp-connect'
 less       = require 'gulp-less'
-minifyCSS  = require 'gulp-minify-css'
-minifyHTML = require 'gulp-minify-html'
+minifyCSS  = require 'gulp-clean-css'
+minifyHTML = require 'gulp-htmlmin'
+minIMG     = require 'gulp-imagemin'
 sourcemaps = require 'gulp-sourcemaps'
 uglify     = require 'gulp-uglify'
 watch      = require 'gulp-watch'
@@ -13,152 +14,138 @@ gulpFilter = require 'gulp-filter'
 rename     = require 'gulp-rename'
 flatten    = require 'gulp-flatten'
 
-paths =
-	scripts: [
-		'dev/coffee/*.coffee'
-		'dev/coffee/**/*.coffee'
-	]
-	libraries: [
-		'dev/lib/**'
-		'dev/local-lib/**'
-	]
-	styles: [
-		'dev/less/*.less'
-	]
-	templates: [
-		'dev/templates/*.html'
-		'dev/templates/**/*.html'
-	]
-	images: [
-		'dev/images/**/*.*'
-		'dev/images/*.*'
-	]
-	app: [
-		'www/app/*.js'
-		'www/css/*.css'
-		'www/templates/**/*.html'
-		'www/templates/*.html'
-		'www/images/*.*'
-		'www/images/**/*.*'
-		'www/*.html'
-	]
+config     = require './config/gulp.json'
+server     = require './config/server.json'
 
-gulp.task 'copy-images', ->
-	gulp.src(paths.images)
-		.pipe gulp.dest('www/images')
-	return
+gulp.task 'libraries', ->
 
-gulp.task 'copy-lib', ->
+  jsFilter    = gulpFilter '*.js', { restore : true }
+  cssFilter   = gulpFilter '*.css', { restore : true }
+  lessFilter  = gulpFilter '*.less', { restore : true }
+  fontFilter  = gulpFilter ['*.eot', '*.woff', '*.woff2', '*.svg', '*.ttf'], { restore : true }
+  imageFilter = gulpFilter ['*.gif', '*.png', '*.svg', '*.jpg', '*.jpeg'], { restore : true }
 
-	jsFilter = gulpFilter('*.js', {restore: true})
-	cssFilter = gulpFilter('*.css', {restore: true})
-	lessFilter = gulpFilter('*.less', {restore: true})
-	fontFilter = gulpFilter(['*.eot', '*.woff', '*.woff2', '*.svg', '*.ttf'], {restore: true})
-	imageFilter = gulpFilter(['*.gif', '*.png', '*.svg', '*.jpg', '*.jpeg'], {restore: true})
+  return gulp
+    .src bowerMain()
+    # JS
+    .pipe jsFilter
+    .pipe uglify()
+    .pipe rename( { suffix: ".min" } )
+    .pipe gulp.dest('dist/lib/js')
+    .pipe jsFilter.restore
+    # CSS
+    .pipe cssFilter
+    .pipe minifyCSS( { compatibility: 'ie8' } )
+    .pipe rename( { suffix: ".min" } )
+    .pipe gulp.dest('dist/lib/css')
+    .pipe cssFilter.restore
+    # LESS
+    .pipe lessFilter
+    .pipe less().on('error', (err) ->
+      console.log err.message
+      @emit 'end'
+    )
+    .pipe minifyCSS( { compatibility: 'ie8' } )
+    .pipe rename( { suffix: ".min" } )
+    .pipe gulp.dest('dist/lib/css')
+    .pipe lessFilter.restore
+    # Fonts
+    .pipe fontFilter
+    .pipe flatten()
+    .pipe gulp.dest('dist/lib/fonts')
+    .pipe fontFilter.restore
+    # Images
+    .pipe imageFilter
+    .pipe flatten()
+    .pipe gulp.dest('dist/lib/images')
+    .pipe imageFilter.restore
 
-	gulp.src(bowerMain())
-		# JS
-		.pipe(jsFilter)
-		.pipe(uglify())
-		.pipe(rename({
-				suffix: ".min"
-		}))
-		#.pipe(concat('lib.min.js'))
-		.pipe(gulp.dest('www/lib/js'))
-		.pipe(jsFilter.restore)
-		# CSS
-		.pipe(cssFilter)
-		.pipe(minifyCSS())
-		.pipe(rename({
-				suffix: ".min"
-		}))
-		.pipe(gulp.dest('www/lib/css'))
-		.pipe(cssFilter.restore)
-		# LESS
-		.pipe(lessFilter)
-		.pipe(less().on('error', (err) ->
-			console.log err.message
-			@emit 'end'
-		))
-		.pipe(minifyCSS())
-		.pipe(rename({
-				suffix: ".min"
-		}))
-		.pipe(gulp.dest('www/lib/css'))
-		.pipe(lessFilter.restore)
-		# Fonts
-		.pipe(fontFilter)
-		.pipe(flatten())
-		.pipe(gulp.dest('www/lib/fonts'))
-		.pipe(fontFilter.restore)
-		# Images
-		.pipe(imageFilter)
-		.pipe(flatten())
-		.pipe(gulp.dest('www/lib/images'))
-		.pipe(imageFilter.restore)
+# Compile CoffeeScript
+gulp.task 'coffee-script', ->
+  conf = config.coffee
+  gulp
+    .src conf.source
+    .pipe coffee().on( 'error', ( err ) ->
+      console.log err.message
+      @emit 'end'
+    )
+    .pipe uglify()
+    .pipe concat( conf.file )
+    .pipe gulp.dest( conf.dest )
+  return
 
-
-gulp.task 'compile-coffee', ->
-	gulp.src(paths.scripts)
-		.pipe(coffee().on('error', (err) ->
-			console.log err.message
-			@emit 'end'
-		))
-		.pipe(uglify())
-		.pipe(concat('app.min.js'))
-		.pipe gulp.dest('www/app')
-	return
-
+# Compile LESS
 gulp.task 'less', ->
-	return gulp.src('dev/less/app.less')
-		.pipe(less().on('error', (err) ->
-			console.log err.message
-			@emit 'end'
-		))
-		.pipe(minifyCSS())
-		.pipe(concat('style.min.css'))
-		.pipe(gulp.dest('www/css'))
+  conf = config.less
+  gulp
+    .src conf.source
+    .pipe less().on( 'error', ( err ) ->
+      console.log err.message
+      @emit 'end'
+    )
+    .pipe minifyCSS( { compatibility: 'ie8' } )
+    .pipe concat( conf.file )
+    .pipe gulp.dest( conf.dest )
+  return
 
+# Minify templates
 gulp.task 'templates', ->
-	gulp.src(paths.templates).pipe(minifyHTML()).pipe gulp.dest('www/templates')
-	return
+  conf = config.templates
+  gulp.src( conf.source ).pipe( minifyHTML( { collapseWhitespace: true } ) ).pipe gulp.dest( conf.dest )
+  return
 
+# Index
 gulp.task 'index', ->
-	gulp.src('dev/index.html')
-		.pipe(minifyHTML())
-		.pipe gulp.dest('www')
-	return
+  conf = config.index
+  gulp
+    .src conf.source
+    .pipe minifyHTML( { collapseWhitespace: true } )
+    .pipe gulp.dest( conf.dest )
+  return
 
-gulp.task 'connect', ->
-	connect.server
-		root: 'www'
-		livereload: true
-	return
+# Minify images
+gulp.task 'images', ->
+  conf = config.images
+  gulp
+    .src conf.source
+    .pipe minIMG()
+    .pipe gulp.dest( conf.dest )
+  return
 
-gulp.task 'refresh', ->
-	gulp.src(paths.app)
-		.pipe connect.reload()
-	return
+gulp.task 'compile', [
+  'libraries'
+  'coffee-script'
+  'less'
+  'templates'
+  'index'
+  'images'
+]
 
-###*
-# Watch files
-###
+# Server
+gulp.task 'server', ->
+  connect.server
+    root       : server.root
+    port       : server.port
+    livereload : true
+  return
+
+# Reload
+gulp.task 'reload', ->
+  gulp
+    .src config.dist
+    .pipe connect.reload()
+  return
+
 gulp.task 'watch', ->
-	gulp.watch [ paths.scripts ], [ 'compile-coffee' ]
-	gulp.watch [ paths.styles ], [ 'less' ]
-	gulp.watch [ paths.templates ], [ 'templates' ]
-	gulp.watch [ 'dev/index.html' ], [ 'index' ]
-	gulp.watch [ paths.images ], [ 'copy-images' ]
-	gulp.watch [ paths.app ], [ 'refresh' ]
-	return
+  gulp.watch [ config.coffee.source ], [ 'coffee-script' ]
+  gulp.watch [ config.less.source ], [ 'less' ]
+  gulp.watch [ config.templates.source ], [ 'templates' ]
+  gulp.watch [ config.index.source ], [ 'index' ]
+  gulp.watch [ config.images.source ], [ 'images' ]
+  gulp.watch [ config.dist ], [ 'reload' ] # livereload
 
 gulp.task 'default', [
-	'copy-lib'
-	'copy-images'
-	'compile-coffee'
-	'less'
-	'templates'
-	'index'
-	'connect'
-	'watch'
+  'compile'
+  'server'
+  'watch'
 ]
