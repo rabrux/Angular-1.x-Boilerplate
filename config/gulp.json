@@ -28,8 +28,8 @@
   },
   "images": {
     "source": [
-      "src/images/*.*",
-      "src/images/**/*.*"
+      "dev/images/*.*",
+      "dev/images/**/*.*"
     ],
     "dest": "dist/images"
   },
