@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "base project web compile",
   "main": "Gulpfile.coffee",
-  "author": "Raúl Salvador Andrade <rsalvador@wat.mx>",
+  "author": {
+    "name": "Rabrux",
+    "email": "n3ur0n4@gmail.com"
+  },
   "license": "MIT",
   "devDependencies": {
     "coffee-script": "1.9.2",
