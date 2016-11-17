@@ -12,15 +12,16 @@ bowerMain  = require 'main-bower-files'
 gulpFilter = require 'gulp-filter'
 rename     = require 'gulp-rename'
 flatten    = require 'gulp-flatten'
+inject     = require 'gulp-inject'
 
 config     = require './config/gulp.json'
 server     = require './config/server.json'
 
 gulp.task 'libraries', ->
 
-  jsFilter    = gulpFilter '*.js', { restore : true }
-  cssFilter   = gulpFilter '*.css', { restore : true }
-  lessFilter  = gulpFilter '*.less', { restore : true }
+  jsFilter    = gulpFilter [ '*.js', '**/*.js' ], { restore : true }
+  cssFilter   = gulpFilter [ '*.css', '**/*.css' ], { restore : true }
+  lessFilter  = gulpFilter [ '*.less', '**/*.less' ], { restore : true }
   fontFilter  = gulpFilter ['*.eot', '*.woff', '*.woff2', '*.svg', '*.ttf'], { restore : true }
   imageFilter = gulpFilter ['*.gif', '*.png', '*.svg', '*.jpg', '*.jpeg'], { restore : true }
 
@@ -58,6 +59,24 @@ gulp.task 'libraries', ->
     .pipe flatten()
     .pipe gulp.dest('dist/lib/images')
     .pipe imageFilter.restore
+
+# Inject
+gulp.task 'inject', [ 'libraries' ], ->
+
+  conf = config.index
+
+  target = gulp.src conf.source
+  sources = gulp.src [
+    'dist/lib/js/angular.min.js'
+    'dist/lib/js/angular-ui-router.min.js'
+    'dist/lib/js/*.js'
+    'dist/lib/css/*.css'
+  ], { read: false }
+
+  target
+    .pipe inject( sources, { ignorePath: 'dist', addRootSlash: false } )
+    # .pipe minifyHTML( { collapseWhitespace: true } )
+    .pipe gulp.dest( conf.dest )
 
 # Compile CoffeeScript
 gulp.task 'coffee-script', ->
@@ -112,11 +131,10 @@ gulp.task 'images', ->
   return
 
 gulp.task 'compile', [
-  'libraries'
+  'inject'
   'coffee-script'
   'less'
   'templates'
-  'index'
   'images'
 ]
 
