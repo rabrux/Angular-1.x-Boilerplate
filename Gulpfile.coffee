@@ -3,6 +3,7 @@ coffee     = require 'gulp-coffee'
 concat     = require 'gulp-concat'
 connect    = require 'gulp-connect'
 less       = require 'gulp-less'
+sass       = require 'gulp-sass'
 minifyCSS  = require 'gulp-clean-css'
 minifyHTML = require 'gulp-htmlmin'
 minIMG     = require 'gulp-imagemin'
@@ -13,6 +14,7 @@ gulpFilter = require 'gulp-filter'
 rename     = require 'gulp-rename'
 flatten    = require 'gulp-flatten'
 inject     = require 'gulp-inject'
+jade       = require 'gulp-jade'
 
 config     = require './config/gulp.json'
 server     = require './config/server.json'
@@ -92,15 +94,12 @@ gulp.task 'coffee-script', ->
     .pipe gulp.dest( conf.dest )
   return
 
-# Compile LESS
-gulp.task 'less', ->
-  conf = config.less
+# Compile Styles
+gulp.task 'styles', ->
+  conf = config.styles
   gulp
     .src conf.source
-    .pipe less().on( 'error', ( err ) ->
-      console.log err.message
-      @emit 'end'
-    )
+    .pipe sass().on( 'error', sass.logError )
     .pipe minifyCSS( { compatibility: 'ie8' } )
     .pipe concat( conf.file )
     .pipe gulp.dest( conf.dest )
@@ -109,7 +108,8 @@ gulp.task 'less', ->
 # Minify templates
 gulp.task 'templates', ->
   conf = config.templates
-  gulp.src( conf.source ).pipe( minifyHTML( { collapseWhitespace: true } ) ).pipe gulp.dest( conf.dest )
+  gulp.src( conf.source ).pipe( jade() ).pipe( minifyHTML( { collapseWhitespace : true } ) ).pipe gulp.dest( conf.dest )
+  # gulp.src( conf.source ).pipe( minifyHTML( { collapseWhitespace: true } ) ).pipe gulp.dest( conf.dest )
   return
 
 # Index
@@ -133,7 +133,7 @@ gulp.task 'images', ->
 gulp.task 'compile', [
   'inject'
   'coffee-script'
-  'less'
+  'styles'
   'templates'
   'images'
 ]
@@ -155,7 +155,7 @@ gulp.task 'reload', ->
 
 gulp.task 'watch', ->
   gulp.watch [ config.coffee.source ], [ 'coffee-script' ]
-  gulp.watch [ config.less.source ], [ 'less' ]
+  gulp.watch [ config.styles.source ], [ 'styles' ]
   gulp.watch [ config.templates.source ], [ 'templates' ]
   gulp.watch [ config.index.source ], [ 'index' ]
   gulp.watch [ config.images.source ], [ 'images' ]

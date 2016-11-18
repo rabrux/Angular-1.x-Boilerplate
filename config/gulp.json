@@ -7,18 +7,18 @@
     "file": "app.min.js",
     "dest": "dist/js"
   },
-  "less": {
+  "styles": {
     "source": [
-      "dev/less/*.less",
-      "dev/less/**/*.less"
+      "dev/styles/*.sass",
+      "dev/styles/**/*.sass"
     ],
     "file": "style.min.css",
     "dest": "dist/css"
   },
   "templates": {
     "source": [
-      "dev/templates/*.html",
-      "dev/templates/**/*.html"
+      "dev/templates/*.jade",
+      "dev/templates/**/*.jade"
     ],
     "dest": "dist/templates"
   },
